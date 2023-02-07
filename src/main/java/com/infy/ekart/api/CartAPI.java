@@ -8,6 +8,7 @@ import javax.validation.constraints.Pattern;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
 import com.infy.ekart.dto.CartProductDTO;
@@ -27,14 +29,16 @@ import com.infy.ekart.exception.EKartException;
 import com.infy.ekart.service.CustomerCartService;
 
 //add the missing annotations
-
+@RestController
 @RequestMapping(value = "/cart-api")
 public class CartAPI {
-
+	@Autowired
 	private CustomerCartService customerCartService;
 
+	@Autowired
 	private Environment environment;
 
+	@Autowired
 	private RestTemplate template;
 
 	Log logger = LogFactory.getLog(CartAPI.class);
@@ -48,15 +52,20 @@ public class CartAPI {
 	public ResponseEntity<String> addProductToCart(@Valid @RequestBody CustomerCartDTO customerCartDTO)
 			throws EKartException {
 		
-		// write your logic here
-		return null;
+		logger.info("Received a request to add a product to cart.");
+		Integer cartId = customerCartService.addProductToCart(customerCartDTO);
+		String responseMessage = environment.getProperty("CustomerCartAPI.PRODUCT_ADDED_TO_CART") + cartId;
 		
+		return new ResponseEntity<>(responseMessage, HttpStatus.OK);
 	}
 
 	@GetMapping(value = "/customer/{customerEmailId}/products")
 	public ResponseEntity<Set<CartProductDTO>> getProductsFromCart(
-			@Pattern(regexp = "[a-zA-Z0-9._]+@[a-zA-Z]{2,}\\.[a-zA-Z][a-zA-Z.]+", message = "{invalid.customeremail.format}") @PathVariable("customerEmailId") String customerEmailId)
+			@Pattern(regexp = "[a-zA-Z0-9._]+@[a-zA-Z]{2,}\\.[a-zA-Z][a-zA-Z.]+", 
+					 message = "{invalid.customeremail.format}") 
+			@PathVariable("customerEmailId") String customerEmailId)
 			throws EKartException {
+		
 		logger.info("Received a request to get products details from " + customerEmailId + " cart");
 
 		Set<CartProductDTO> cartProductDTOs = customerCartService.getProductsFromCart(customerEmailId);
@@ -80,20 +89,30 @@ public class CartAPI {
 
 	@DeleteMapping(value = "/customer/{customerEmailId}/product/{productId}")
 	public ResponseEntity<String> deleteProductFromCart(
-			@Pattern(regexp = "[a-zA-Z0-9._]+@[a-zA-Z]{2,}\\.[a-zA-Z][a-zA-Z.]+", message = "{invalid.customeremail.format}") @PathVariable("customerEmailId") String customerEmailId,
-			@NotNull(message = "{invalid.email.format}") @PathVariable("productId") Integer productId)
+			@Pattern(regexp = "[a-zA-Z0-9._]+@[a-zA-Z]{2,}\\.[a-zA-Z][a-zA-Z.]+", 
+					 message = "{invalid.customeremail.format}") 
+			@PathVariable("customerEmailId") String customerEmailId,
+			@NotNull(message = "{invalid.email.format}") 
+			@PathVariable("productId") Integer productId)
 			throws EKartException {
 		
-		// write your logic here
-		return null;
+		logger.info("Received a request to delete a product from the cart with given productId");
+		customerCartService.deleteProductFromCart(customerEmailId, productId);
+		String responseMessage = environment.getProperty("CustomerCartAPI.PRODUCT_DELETED_FROM_CART_SUCCESS");
+		return new ResponseEntity<>(responseMessage, HttpStatus.OK);
 
 	}
 
 	@PutMapping(value = "/customer/{customerEmailId}/product/{productId}")
 	public ResponseEntity<String> modifyQuantityOfProductInCart(
-			@Pattern(regexp = "[a-zA-Z0-9._]+@[a-zA-Z]{2,}\\.[a-zA-Z][a-zA-Z.]+", message = "{invalid.customeremail.format}") @PathVariable("customerEmailId") String customerEmailId,
-			@NotNull(message = "{invalid.email.format}") @PathVariable("productId") Integer productId,
-			@RequestBody String quantity) throws EKartException {
+			@Pattern(regexp = "[a-zA-Z0-9._]+@[a-zA-Z]{2,}\\.[a-zA-Z][a-zA-Z.]+", 
+					 message = "{invalid.customeremail.format}") 
+			@PathVariable("customerEmailId") String customerEmailId,
+			@NotNull(message = "{invalid.email.format}") 
+			@PathVariable("productId") Integer productId,
+			@RequestBody String quantity) 
+			throws EKartException {
+		
 		logger.info("Received a request to modify the quantity of +" + productId + " prouct from  " + customerEmailId
 				+ " cart");
 
@@ -105,7 +124,9 @@ public class CartAPI {
 
 	@DeleteMapping(value = "/customer/{customerEmailId}/products")
 	public ResponseEntity<String> deleteAllProductsFromCart(
-			@Pattern(regexp = "[a-zA-Z0-9._]+@[a-zA-Z]{2,}\\.[a-zA-Z][a-zA-Z.]+", message = "{invalid.customeremail.format}") @PathVariable("customerEmailId") String customerEmailId)
+			@Pattern(regexp = "[a-zA-Z0-9._]+@[a-zA-Z]{2,}\\.[a-zA-Z][a-zA-Z.]+", 
+					 message = "{invalid.customeremail.format}") 
+			@PathVariable("customerEmailId") String customerEmailId)
 			throws EKartException {
 		logger.info("Received a request to clear " + customerEmailId + " cart");
 

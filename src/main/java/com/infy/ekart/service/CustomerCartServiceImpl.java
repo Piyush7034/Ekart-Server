@@ -14,11 +14,9 @@ import com.infy.ekart.dto.CustomerCartDTO;
 import com.infy.ekart.dto.ProductDTO;
 import com.infy.ekart.entity.CartProduct;
 import com.infy.ekart.entity.CustomerCart;
-import com.infy.ekart.entity.Product;
 import com.infy.ekart.exception.EKartException;
 import com.infy.ekart.repository.CartProductRepository;
 import com.infy.ekart.repository.CustomerCartRepository;
-import com.infy.ekart.repository.ProductRepository;
 
 //add the missing annotations
 @Service(value = "customerCartService")
@@ -28,9 +26,6 @@ public class CustomerCartServiceImpl implements CustomerCartService {
 
 	@Autowired
 	private CartProductRepository cartProductRepository;
-	
-	@Autowired
-	private ProductRepository productRepository;
 	
 	@Autowired
 	private CustomerProductService customerProductService;

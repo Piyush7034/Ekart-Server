@@ -5,6 +5,7 @@ import javax.validation.constraints.Pattern;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.infy.ekart.dto.CustomerCredDTO;
 import com.infy.ekart.dto.CustomerDTO;
@@ -21,14 +23,16 @@ import com.infy.ekart.exception.EKartException;
 import com.infy.ekart.service.CustomerService;
 
 //add the missing annotations
-
+@RestController
 @RequestMapping(value = "/customer-api")
 public class CustomerAPI {
-
+	@Autowired
 	private CustomerService customerService;
 
+	@Autowired
 	private Environment environment;
 
+	@Autowired
 	static Log logger = LogFactory.getLog(CustomerAPI.class);
 
 	@PostMapping(value = "/login")
@@ -54,7 +58,9 @@ public class CustomerAPI {
 
 	@PutMapping(value = "/customer/{customerEmailId:.+}/address/")
 	public ResponseEntity<String> updateShippingAddress(
-			@PathVariable @Pattern(regexp = "[a-zA-Z0-9._]+@[a-zA-Z]{2,}\\.[a-zA-Z][a-zA-Z.]+", message = "{invalid.email.format}") String customerEmailId,
+			@PathVariable 
+			@Pattern(regexp = "[a-zA-Z0-9._]+@[a-zA-Z]{2,}\\.[a-zA-Z][a-zA-Z.]+", 
+					 message = "{invalid.email.format}") String customerEmailId,
 			@RequestBody String address) throws EKartException {
 
 		customerService.updateShippingAddress(customerEmailId, address);
@@ -65,7 +71,9 @@ public class CustomerAPI {
 
 	@DeleteMapping(value = "/customer/{customerEmailId:.+}")
 	public ResponseEntity<String> deleteShippingAddress(
-			@Pattern(regexp = "[a-zA-Z0-9._]+@[a-zA-Z]{2,}\\.[a-zA-Z][a-zA-Z.]+", message = "{invalid.email.format}") @PathVariable("customerEmailId") String customerEmailId)
+			@Pattern(regexp = "[a-zA-Z0-9._]+@[a-zA-Z]{2,}\\.[a-zA-Z][a-zA-Z.]+", 
+					 message = "{invalid.email.format}") 
+			@PathVariable("customerEmailId") String customerEmailId)
 			throws EKartException {
 
 		customerService.deleteShippingAddress(customerEmailId);
@@ -73,5 +81,4 @@ public class CustomerAPI {
 		return new ResponseEntity<>(modificationSuccessMsg, HttpStatus.OK);
 
 	}
-
 }
