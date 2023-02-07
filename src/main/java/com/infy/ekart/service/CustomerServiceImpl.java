@@ -2,15 +2,18 @@ package com.infy.ekart.service;
 
 import java.util.Optional;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
 import com.infy.ekart.dto.CustomerDTO;
 import com.infy.ekart.entity.Customer;
 import com.infy.ekart.exception.EKartException;
 import com.infy.ekart.repository.CustomerRepository;
 
 //add the missing annotations
-
+@Service(value = "customerService")
 public class CustomerServiceImpl implements CustomerService {
-
+	@Autowired
 	private CustomerRepository customerRepository;
 
 	@Override
@@ -88,10 +91,20 @@ public class CustomerServiceImpl implements CustomerService {
 	
 	@Override
 	public CustomerDTO getCustomerByEmailId(String emailId) throws EKartException {
+		CustomerDTO customerDTO = null;
+		Optional<Customer> optionalCustomer = customerRepository.findById(emailId.toLowerCase());
+		Customer customer = optionalCustomer.orElseThrow(() -> new EKartException("CustomerService.CUSTOMER_NOT_FOUND"));
 		
-		// write your logic here
-		return null;
-
+		customerDTO = new CustomerDTO();
+		
+		customerDTO = new CustomerDTO();
+		customerDTO.setEmailId(customer.getEmailId());
+		customerDTO.setName(customer.getName());
+		customerDTO.setPhoneNumber(customer.getPhoneNumber());
+		customerDTO.setPassword(customer.getPassword());
+		customerDTO.setNewPassword(customer.getPassword());
+		customerDTO.setAddress(customer.getAddress());
+		return customerDTO;
 	}
 
 }

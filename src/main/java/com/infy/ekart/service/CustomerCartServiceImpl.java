@@ -6,21 +6,34 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
 import com.infy.ekart.dto.CartProductDTO;
 import com.infy.ekart.dto.CustomerCartDTO;
+import com.infy.ekart.dto.ProductDTO;
 import com.infy.ekart.entity.CartProduct;
 import com.infy.ekart.entity.CustomerCart;
+import com.infy.ekart.entity.Product;
 import com.infy.ekart.exception.EKartException;
 import com.infy.ekart.repository.CartProductRepository;
 import com.infy.ekart.repository.CustomerCartRepository;
+import com.infy.ekart.repository.ProductRepository;
 
 //add the missing annotations
-
+@Service(value = "customerCartService")
 public class CustomerCartServiceImpl implements CustomerCartService {
-
+	@Autowired
 	private CustomerCartRepository customerCartRepository;
 
+	@Autowired
 	private CartProductRepository cartProductRepository;
+	
+	@Autowired
+	private ProductRepository productRepository;
+	
+	@Autowired
+	private CustomerProductService customerProductService;
 
 	@Override
 	public Integer addProductToCart(CustomerCartDTO customerCartDTO) throws EKartException {
@@ -70,9 +83,41 @@ public class CustomerCartServiceImpl implements CustomerCartService {
 	
 	@Override
 	public Set<CartProductDTO> getProductsFromCart(String customerEmailId) throws EKartException {
+		Set<CartProductDTO> cartProductDTOList = new HashSet<>();
+		Optional<CustomerCart> optionalCustomerCart = customerCartRepository.findByCustomerEmailId(customerEmailId);
+		CustomerCart customerCart = optionalCustomerCart.
+									orElseThrow(() -> new EKartException("CustomerCartService.NO_CART_FOUND"));
 		
-		// write your logic here
-		return null;
+		if(customerCart.getCartProducts().isEmpty()) {
+			throw new EKartException("CustomerCartService.NO_PRODUCT_ADDED_TO_CART");
+		}
+		
+		for(CartProduct cartProduct: customerCart.getCartProducts()) {
+			CartProductDTO cartProductDTO = new CartProductDTO();
+			cartProductDTO.setCartProductId(cartProduct.getCartProductId());
+			
+//			Optional<Product> productOp = productRepository.findById(cartProduct.getProductId());
+//			Product product = productOp
+//					.orElseThrow(() -> new EKartException("ProductService.PRODUCT_NOT_AVAILABLE"));
+//
+//			ProductDTO productDTO = new ProductDTO();
+//			productDTO.setBrand(product.getBrand());
+//			productDTO.setCategory(product.getCategory());
+//			productDTO.setDescription(product.getDescription());
+//			productDTO.setName(product.getName());
+//			productDTO.setPrice(product.getPrice());
+//			productDTO.setProductId(product.getProductId());
+//			productDTO.setAvailableQuantity(product.getAvailableQuantity());
+			
+			ProductDTO productDTO = customerProductService.getProductById(cartProduct.getProductId());
+			
+			cartProductDTO.setProduct(productDTO);
+			cartProductDTO.setQuantity(cartProduct.getQuantity());
+			
+			cartProductDTOList.add(cartProductDTO);
+		}
+		
+		return cartProductDTOList;
 		
 	}
 
@@ -84,8 +129,21 @@ public class CustomerCartServiceImpl implements CustomerCartService {
 	
 	@Override
 	public void deleteProductFromCart(String customerEmailId, Integer productId) throws EKartException {
-
-		// write your logic here
+		Optional<CustomerCart> optionalCustomerCart = customerCartRepository.findByCustomerEmailId(customerEmailId);
+		CustomerCart customerCart = optionalCustomerCart.
+									orElseThrow(() -> new EKartException("CustomerCartService.NO_CART_FOUND"));
+		
+		if(customerCart.getCartProducts().isEmpty()) {
+			throw new EKartException("CustomerCartService.NO_PRODUCT_ADDED_TO_CART");
+		}
+		
+		for(CartProduct cartProduct: customerCart.getCartProducts()) {
+			if(cartProduct.getProductId() == productId) {
+				customerCart.getCartProducts().remove(cartProduct);
+			}
+		}
+		
+		cartProductRepository.deleteById(productId);
 		
 	}
 

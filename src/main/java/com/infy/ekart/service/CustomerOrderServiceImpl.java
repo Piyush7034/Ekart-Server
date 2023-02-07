@@ -5,6 +5,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
 import com.infy.ekart.dto.CustomerDTO;
 import com.infy.ekart.dto.OrderDTO;
 import com.infy.ekart.dto.OrderStatus;
@@ -17,17 +20,18 @@ import com.infy.ekart.exception.EKartException;
 import com.infy.ekart.repository.CustomerOrderRepository;
 
 //add the missing annotations
-
+@Service(value = "customerOrderService")
 public class CustomerOrderServiceImpl implements CustomerOrderService {
-	
+	@Autowired
 	private CustomerOrderRepository orderRepository;
 	
+	@Autowired
 	private CustomerService customerService;
 	
 	@Override
 	public Integer placeOrder(OrderDTO orderDTO) throws EKartException {
 		
-		  CustomerDTO customerDTO =customerService.getCustomerByEmailId(orderDTO.getCustomerEmailId());
+		  CustomerDTO customerDTO = customerService.getCustomerByEmailId(orderDTO.getCustomerEmailId());
 		
 		  if(customerDTO.getAddress() == null || customerDTO.getAddress().isBlank())
 		  {
@@ -56,10 +60,10 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
 	    List<OrderedProduct> orderedProducts = new ArrayList<OrderedProduct>();
 	   
 	    for(OrderedProductDTO orderedProductDTO : orderDTO.getOrderedProducts())
-	    {   if(orderedProductDTO.getProduct().getAvailableQuantity() < orderedProductDTO.getQuantity())
-	    {
+	    {   
+	    	if(orderedProductDTO.getProduct().getAvailableQuantity() < orderedProductDTO.getQuantity()) {
 	    	   throw new EKartException("OrderService.INSUFFICIENT_STOCK");
-	    }
+	    	}
 	    	
 	    	OrderedProduct orderedProduct = new OrderedProduct();
 	        orderedProduct.setProductId(orderedProductDTO.getProduct().getProductId());
