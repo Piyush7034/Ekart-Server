@@ -1,6 +1,7 @@
 package com.infy.ekart.api;
 
 import java.security.NoSuchAlgorithmException;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import javax.validation.Valid;
@@ -9,6 +10,7 @@ import javax.validation.constraints.Pattern;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,21 +21,27 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestTemplate;
 
 import com.infy.ekart.dto.CardDTO;
+import com.infy.ekart.dto.OrderDTO;
+import com.infy.ekart.dto.TransactionDTO;
 import com.infy.ekart.exception.EKartException;
 import com.infy.ekart.service.PaymentService;
 
 //add the missing annotations
-
+@RestController
 @RequestMapping(value = "/payment-api")
 public class PaymentAPI {
-
+	@Autowired
 	private PaymentService paymentService;
 
+	@Autowired
 	private Environment environment;
 
-	//private RestTemplate template;
+	@Autowired
+	private RestTemplate template;
 
 	Log logger = LogFactory.getLog(PaymentAPI.class);
 
@@ -85,8 +93,10 @@ public class PaymentAPI {
 	public ResponseEntity<List<CardDTO>> getCardsOfCustomer(@PathVariable String customerEmailId,
 			@PathVariable String cardType) throws EKartException {
 		
-		// write your logic here
-		return null;
+		logger.info("Received a request to get the cards of the customer with gicen customer email id.");
+		List<CardDTO> cardDTOList = paymentService.getCardsOfCustomer(customerEmailId, cardType);
+		
+		return new ResponseEntity<>(cardDTOList, HttpStatus.OK);
 				
 	}
 	
@@ -104,12 +114,44 @@ public class PaymentAPI {
 
 	@PostMapping(value = "/customer/{customerEmailId}/order/{orderId}")
 	public ResponseEntity<String> payForOrder(
-			@Pattern(regexp = "[a-zA-Z0-9._]+@[a-zA-Z]{2,}\\.[a-zA-Z][a-zA-Z.]+", message = "{invalid.email.format}") @PathVariable("customerEmailId") String customerEmailId,
+			@Pattern(regexp = "[a-zA-Z0-9._]+@[a-zA-Z]{2,}\\.[a-zA-Z][a-zA-Z.]+", 
+					 message = "{invalid.email.format}") 
+			@PathVariable("customerEmailId") String customerEmailId,
 			@NotNull(message = "{orderId.absent") @PathVariable("orderId") Integer orderId,
 			@Valid @RequestBody CardDTO cardDTO) throws NoSuchAlgorithmException, EKartException {
 		
 		// write your logic here
-		return null;
+		ResponseEntity<OrderDTO> orderResponse = template.
+														getForEntity("http://localhost:3333/Ekart/order-api/order/" + orderId, 
+														OrderDTO.class);
+		OrderDTO orderDTO = orderResponse.getBody();
+		
+		TransactionDTO transactionDTO = new TransactionDTO();
+		
+		transactionDTO.setCard(cardDTO);
+		transactionDTO.setOrder(orderDTO);
+		transactionDTO.setTotalPrice(orderDTO.getTotalPrice());
+		transactionDTO.setTransactionDate(LocalDateTime.now());
+		
+		TransactionDTO transactionDTOAuth = paymentService.authenticatePayment(customerEmailId, transactionDTO);
+		
+		Integer transactionId = paymentService.addTransaction(transactionDTOAuth);
+		
+		transactionDTO.setTransactionId(transactionId);
+		
+		template.put(
+				"http://localhost:3333/Ekart/order-api/order/" + orderId + "/update/order-status", 
+				transactionDTOAuth.getTransactionStatus());
+		
+		String response = environment.
+									 getProperty(
+											 "PaymentAPI.TRANSACTION_SUCCESSFULL_ONE" + 
+											 transactionDTOAuth.getTotalPrice() + " " +
+											 "PaymentAPI.TRANSACTION_SUCCESSFULL_TWO" + 
+											 orderId + "PaymentAPI.TRANSACTION_SUCCESSFULL_THREE" + 
+											 transactionDTOAuth.getTransactionId());
+		
+		return new ResponseEntity<>(response, HttpStatus.OK);
 
 	}
 
